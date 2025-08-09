@@ -1,4 +1,23 @@
 import requests, re, datetime, pytz, os, csv
+import smtplib, ssl
+
+def send_email_alert(subject, body):
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = int(os.getenv("SMTP_PORT", "465"))
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    to_email   = os.getenv("TO_EMAIL")
+    from_email = os.getenv("FROM_EMAIL", smtp_user)
+
+    if not all([smtp_server, smtp_user, smtp_pass, to_email]):
+        print("Email not sent: SMTP env vars missing.")
+        return
+
+    msg = f"From: {from_email}\r\nTo: {to_email}\r\nSubject: {subject}\r\n\r\n{body}"
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(smtp_server, smtp_port, context=context) as server:
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(from_email, [to_email], msg.encode("utf-8"))
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
@@ -43,6 +62,17 @@ def record_price(csv_path):
         if new_file:
             w.writerow(['Date', 'Price_USD', 'Price_CNY', 'Price_AUD'])
         w.writerow([date_str, price_usd, price_cny, price_aud])
+
+# Alert if USD below threshold
+THRESHOLD_USD = 55.0
+if price_usd is not None and price_usd < THRESHOLD_USD:
+    subject = f"[ALERT] Shanghai Disney price dropped: ${price_usd:.2f} USD"
+    body = (
+        f"Date: {date_str}\n"
+        f"USD: ${price_usd:.2f}\nCNY: ¥{price_cny:.2f}\nAUD: ${price_aud:.2f}\n\n"
+        f"URL: {URL}"
+    )
+    send_email_alert(subject, body)
 
 if __name__ == "__main__":
     record_price(CSV_PATH)
