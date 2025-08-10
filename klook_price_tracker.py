@@ -50,27 +50,27 @@ def get_prices():
     return price_usd, price_cny, price_aud
 
 def record_price(csv_path):
-    # Get the three prices from Klook
     price_usd, price_cny, price_aud = get_prices()
-
     mel_tz = pytz.timezone('Australia/Melbourne')
     date_str = datetime.datetime.now(mel_tz).strftime('%Y-%m-%d')
 
+    os.makedirs(os.path.dirname(csv_path), exist_ok=True)
     new_file = not os.path.exists(csv_path)
-    with open(csv_path, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        if new_file:
-            writer.writerow(['Date', 'Price_USD', 'Price_CNY', 'Price_AUD'])
-        writer.writerow([date_str, price_usd, price_cny, price_aud])
 
-    # Move the alert logic here, after price_usd has been defined
+    with open(csv_path, 'a', newline='', encoding='utf-8') as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(['Date', 'Price_USD', 'Price_CNY', 'Price_AUD'])
+        w.writerow([date_str, price_usd, price_cny, price_aud])
+
+    # Alert if USD below threshold
     THRESHOLD_USD = 55.0
     if price_usd is not None and price_usd < THRESHOLD_USD:
         subject = f"[ALERT] Shanghai Disney price dropped: ${price_usd:.2f} USD"
         body = (
             f"Date: {date_str}\n"
-            f"USD: ${price_usd:.2f}\nCNY: ¥{price_cny:.2f}\nAUD: ${price_aud:.2f}\n\n"
-            f"URL: {URL}"
+        f"USD: ${price_usd:.2f}\nCNY: ¥{price_cny:.2f}\nAUD: ${price_aud:.2f}\n\n"
+        f"URL: {URL}"
         )
         send_email_alert(subject, body)
 
