@@ -40,11 +40,11 @@ def get_prices():
 
     # If USD is missing, derive from CNY with a conservative rate (update if you like)
     if price_usd is None and price_cny is not None:
-        usd_per_cny = 0.14
+        usd_per_cny = 0.21
         price_usd = price_cny * usd_per_cny
 
     # AUD from USD (update periodically or switch to a live API if you want)
-    aud_per_usd = 1.54
+    aud_per_usd = 1.53
     price_aud = price_usd * aud_per_usd if price_usd is not None else None
 
     return price_usd, price_cny, price_aud
